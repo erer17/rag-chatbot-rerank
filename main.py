@@ -82,7 +82,7 @@ def ask_gemini(prompt):
 
 class Question(BaseModel):
     question: str
-    use_rerank: bool = False  # 默认关闭
+    use_rerank: bool = True  # 默认关闭
 
 
 @app.post("/ask")
