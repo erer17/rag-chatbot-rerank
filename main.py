@@ -13,7 +13,7 @@ client = chromadb.PersistentClient(path="./chroma_db")
 collection = client.get_collection("company_docs")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # 模型名可用环境变量改
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")  # 模型名可用环境变量改
 
 # ⬇️ 本地算向量,跟 build_db.py 用同一个模型
 embed_model = TextEmbedding("BAAI/bge-small-zh-v1.5")
