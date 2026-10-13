@@ -7,7 +7,7 @@ import os
 # HF_TOKEN = os.environ.get("HF_TOKEN")
 # hf_client = InferenceClient(token=HF_TOKEN)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # 模型名可用环境变量改
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")  # 模型名可用环境变量改
 
 #def get_embedding(text):
 #    result = hf_client.feature_extraction(text, model="BAAI/bge-small-zh-v1.5")
