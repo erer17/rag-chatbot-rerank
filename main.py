@@ -72,7 +72,11 @@ def ask_gemini(prompt):
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="未配置 GEMINI_API_KEY 环境变量")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+# ✅ 确保 model 名称干净（如果 GEMINI_MODEL 里不小心带了其他前缀，这里可以规范化）
+    model_name = GEMINI_MODEL.replace("models/", "")
+    
+    # 明确加上 models/ 前缀，符合 Google REST API 规范
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
     
     try:
         # ⬅️ 修改点 1：设置连接超时 10 秒，读取响应超时 120 秒，避免 60s 直接抛出 ReadTimeout
