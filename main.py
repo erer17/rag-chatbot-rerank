@@ -22,7 +22,7 @@ collection = client.get_collection("company_docs")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # 默认模型名
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
 # 本地向量模型
 embed_model = TextEmbedding("BAAI/bge-small-zh-v1.5")
@@ -77,7 +77,7 @@ def ask_gemini(prompt):
     
     # 明确加上 models/ 前缀，符合 Google REST API 规范
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
-    
+
     try:
         # ⬅️ 修改点 1：设置连接超时 10 秒，读取响应超时 120 秒，避免 60s 直接抛出 ReadTimeout
         resp = requests.post(
