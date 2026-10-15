@@ -22,7 +22,7 @@ collection = client.get_collection("company_docs")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # 默认模型名
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
 
 # 本地向量模型
 embed_model = TextEmbedding("BAAI/bge-small-zh-v1.5")
