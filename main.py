@@ -30,24 +30,44 @@ embed_model = TextEmbedding("BAAI/bge-small-zh-v1.5")
 def get_embedding(text):
     return list(embed_model.embed([text]))[0].tolist()
 
-# 本地 rerank（用到才延迟加载）
-_reranker = None
-def rerank(query, documents, top_n=3):
-    global _reranker
-    try:
-        if _reranker is None:
-            from fastembed.rerank.cross_encoder import TextCrossEncoder
-            # 如果 Render 512MB 内存不够，加载模型可能报错
-            _reranker = TextCrossEncoder(model_name="BAAI/bge-reranker-base")
+# # 本地 rerank（用到才延迟加载）
+# _reranker = None
+# def rerank(query, documents, top_n=3):
+#     global _reranker
+#     try:
+#         if _reranker is None:
+#             from fastembed.rerank.cross_encoder import TextCrossEncoder
+#             # 如果 Render 512MB 内存不够，加载模型可能报错
+#             _reranker = TextCrossEncoder(model_name="BAAI/bge-reranker-base")
         
-        scores = list(_reranker.rerank(query, documents))
-        ranked = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
-        return [doc for doc, _ in ranked[:top_n]]
-    except Exception as e:
-        print(f"Rerank 失败，回退到原始文档顺序: {e}")
-        # 如果 Rerank 模型加载或计算失败，降级退回前 top_n 个文档，保证接口不崩
-        return documents[:top_n]
+#         scores = list(_reranker.rerank(query, documents))
+#         ranked = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
+#         return [doc for doc, _ in ranked[:top_n]]
+#     except Exception as e:
+#         print(f"Rerank 失败，回退到原始文档顺序: {e}")
+#         # 如果 Rerank 模型加载或计算失败，降级退回前 top_n 个文档，保证接口不崩
+#         return documents[:top_n]
 
+import cohere
+import os
+
+co = cohere.ClientV2(os.environ.get("COHERE_API_KEY"))
+
+def rerank(query, documents, top_n=3):
+    try:
+        response = co.rerank(
+            model="rerank-v3.5",
+            query=query,
+            documents=documents,
+            top_n=top_n,
+        )
+        # 提取重排后的文档
+        ranked_docs = [documents[result.index] for result in response.results]
+        return ranked_docs
+    except Exception as e:
+        print(f"Cohere Rerank 失败，降级回原始文档: {e}")
+        return documents[:top_n]
+    
 def ask_gemini(prompt):
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="未配置 GEMINI_API_KEY 环境变量")
@@ -60,7 +80,7 @@ def ask_gemini(prompt):
             url,
             headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
             json={"contents": [{"parts": [{"text": prompt}]}]},
-            timeout=(10, 120) 
+            timeout=(10, 45) 
         )
         data = resp.json()
 
@@ -82,7 +102,7 @@ def ask_gemini(prompt):
 
 class Question(BaseModel):
     question: str
-    use_rerank: bool = False  # 默认关闭
+    use_rerank: bool = True  # 默认关闭
 
 
 @app.post("/ask")
@@ -97,12 +117,12 @@ def ask(q: Question):
             return {"answer": "知识库中未查找到相关紫微斗数资料。", "used_rerank": q.use_rerank, "retrieved_docs": []}
 
         # 2. 是否使用 Rerank
-        top_docs = rerank(q.question, candidates, top_n=3) if q.use_rerank else candidates[:3]
+        top_docs = rerank(q.question, candidates, top_n=3) if q.use_rerank else candidates[:5]
         context = "\n".join(top_docs)
 
         # 3. 构造 Prompt 并调用 AI
         prompt = (
-            f"根据以下紫微斗数文件回答问题，若文件没提到就说不知道。\n"
+            f"你是一位资深紫微斗数专家。请优先结合以下【参考文件】回答问题。如果参考文件中未直接提及，请明确说明“文件中未详细提及”，并结合你自身的紫微斗数专业知识进行解答。\n"
             f"文件内容:\n{context}\n\n"
             f"问题:{q.question}\n"
             f"回答:"
